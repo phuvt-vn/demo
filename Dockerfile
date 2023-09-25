@@ -14,10 +14,8 @@ RUN mvn package
 
 FROM eclipse-temurin:11
 
-#maintainer 
-MAINTAINER dstar55@yahoo.com
 #expose port 8080
-EXPOSE 8080
+EXPOSE 8082
 
 #default command
 CMD java -jar /data/hello-world-0.1.0.jar
