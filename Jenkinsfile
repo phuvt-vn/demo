@@ -21,29 +21,21 @@ node {
     }    
   
     stage('Build Project') {
+
+      sh "git pull"    
+	    
       // build project via maven
-      sh "'${mvnHome}/bin/mvn' -Dmaven.test.failure.ignore clean package"
+      sh "'${mvnHome}/bin/mvn' -Dmaven.test.failure.ignore clean install"
     }
 	
-	stage('Publish Tests Results'){
-      parallel(
-        publishJunitTestsResultsToJenkins: {
-          echo "Publish junit Tests Results"
-		  junit '**/target/surefire-reports/TEST-*.xml'
-		  archive 'target/*.jar'
-        },
-        publishJunitTestsResultsToSonar: {
-          echo "This is branch b"
-      })
-    }
-		
     stage('Build Docker Image') {
       // build docker image
       sh "whoami"
       //sh "ls -all /var/run/docker.sock"
       sh "mv ./target/hello*.jar ./data" 
       
-      dockerImage = docker.build("hello-world-java")
+      //dockerImage = docker.build("hello-world-java")
+      dockerImage = docker.build("hello-world-java", "-f", "Dockerfile", "-t", "${dockerImageTag}")
     }
    
     stage('Deploy Docker Image'){
@@ -51,6 +43,6 @@ node {
       echo "Docker Image Tag Name: ${dockerImageTag}"
       sh 'docker stop my-container'
       sh 'docker rm my-container'
-      //sh 'docker run -d -p 8082:8080 --name my-container hello-world-java'
+      sh 'docker run -d -p 8082:8080 --name my-container hello-world-java'
     }
 }
