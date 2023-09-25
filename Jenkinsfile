@@ -7,7 +7,7 @@ node {
     def dockerImage
     // ip address of the docker private repository(nexus)
     
-    def dockerRepoUrl = "3.1.254.29:8082"
+    def dockerRepoUrl = "1.2.3.4"
     def dockerImageName = "hello-world-java"
     def dockerImageTag = "${dockerRepoUrl}/${dockerImageName}:${env.BUILD_NUMBER}"
     
@@ -49,6 +49,8 @@ node {
     stage('Deploy Docker Image'){
 
       echo "Docker Image Tag Name: ${dockerImageTag}"
-
+      sh 'docker stop my-container'
+      sh 'docker rm my-container'
+      sh 'docker run -d -p 8082:8080 --name my-container hello-world-java'
     }
 }
