@@ -35,6 +35,13 @@ node {
       sh "mv ./target/hello*.jar ./data" 
       sh "ls -all /var/run/docker.sock"
       sh "docker rmi hello-world-java"
+
+      	# Get the current working directory
+	sh 'current_dir=$(pwd)'
+
+	# Print the full path of the moved file
+	sh 'echo "$current_dir/data/hello*.jar"'
+	    
       dockerImage = docker.build("hello-world-java")
 
     }
