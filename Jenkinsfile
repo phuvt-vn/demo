@@ -15,6 +15,7 @@ node {
               sh "docker stop springboot-deploy || true && docker rm springboot-deploy || true"
               sh "docker rmi springboot-deploy || true"
               dockerImage = docker.build("springboot-deploy")
+              sh "docker image prune || true"
           }
 
           stage('Deploy docker'){
