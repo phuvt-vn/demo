@@ -23,7 +23,7 @@ node {
     stage('Build Project') {
 
       sh "git branch --set-upstream-to=origin/master master"    
-	    
+	sh "git pull"    
       // build project via maven
       sh "'${mvnHome}/bin/mvn' -Dmaven.test.failure.ignore clean install"
     }
