@@ -1,63 +1,55 @@
 node {
-    // reference to maven
-    // ** NOTE: This 'maven-3.6.1' Maven tool must be configured in the Jenkins Global Configuration.   
-    def mvnHome = tool 'maven-3.8.5'
+    def WORKSPACE = "/var/lib/jenkins/workspace/springboot-deploy"
+    def dockerImageTag = "springboot-deploy${env.BUILD_NUMBER}"
 
-    // holds reference to docker image
-    def dockerImage
-    // ip address of the docker private repository(nexus)
-    
-    def dockerRepoUrl = "1.2.3.4"
-    def dockerImageName = "hello-world-java"
-    def dockerImageTag = "${dockerRepoUrl}/${dockerImageName}:${env.BUILD_NUMBER}"
-    
-    stage('Clone Repo') { // for display purposes
-      // Get some code from a GitHub repository
-      git 'https://github.com/phuvtvo/demo.git'
-      // Get the Maven tool.
-      // ** NOTE: This 'maven-3.6.1' Maven tool must be configured
-      // **       in the global configuration.           
-      mvnHome = tool 'maven-3.8.5'
-    }    
-  
-    stage('Build Project') {
+    try{
+//          notifyBuild('STARTED')
+         stage('Clone Repo') {
+            // for display purposes
+            // Get some code from a GitHub repository
+            git url: 'https://gitlab.com/gpranataAsyst/springboot-demodeploy.git',
+                credentialsId: 'springdeploy-user',
+                branch: 'main'
+         }
+          stage('Build docker') {
+                 dockerImage = docker.build("springboot-deploy:${env.BUILD_NUMBER}")
+          }
 
-      sh "git branch --set-upstream-to=origin/master master"    
-	sh "git pull"    
-      // build project via maven
-      sh "'${mvnHome}/bin/mvn' -Dmaven.test.failure.ignore clean install"
+          stage('Deploy docker'){
+                  echo "Docker Image Tag Name: ${dockerImageTag}"
+                  sh "docker stop springboot-deploy || true && docker rm springboot-deploy || true"
+                  sh "docker run --name springboot-deploy -d -p 8081:8081 springboot-deploy:${env.BUILD_NUMBER}"
+          }
+    }catch(e){
+//         currentBuild.result = "FAILED"
+        throw e
+    }finally{
+//         notifyBuild(currentBuild.result)
     }
-	
-    stage('Build Docker Image') {
+}
 
-      sh "docker rmi hello-world-java"
-      sh 'echo "$current_dir/data/hello*.jar"'
-      dockerImage = docker.build("hello-world-java")
+def notifyBuild(String buildStatus = 'STARTED'){
 
-    }
-   
-    stage('Deploy Docker Image'){
+// build status of null means successful
+  buildStatus =  buildStatus ?: 'SUCCESSFUL'
+  // Default values
+  def colorName = 'RED'
+  def colorCode = '#FF0000'
+  def now = new Date()
+  // message
+  def subject = "${buildStatus}, Job: ${env.JOB_NAME} FRONTEND - Deployment Sequence: [${env.BUILD_NUMBER}] "
+  def summary = "${subject} - Check On: (${env.BUILD_URL}) - Time: ${now}"
+  def subject_email = "Spring boot Deployment"
+  def details = """<p>${buildStatus} JOB </p>
+    <p>Job: ${env.JOB_NAME} - Deployment Sequence: [${env.BUILD_NUMBER}] - Time: ${now}</p>
+    <p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME}</a>"</p>"""
 
-      echo "Docker Image Tag Name: ${dockerImageTag}"
-      sh 'docker stop my-container'
-	steps {
-		script {
-		    def imageName = 'hello-world-java'
-	
-		    // Check if the image exists
-		    def imageExists = sh(script: "docker inspect -f '{{.Id}}' $imageName", returnStatus: true) == 0
-	
-		    if (imageExists) {
-			// Image exists, remove it
-			sh "docker rmi $imageName"
-		    } else {
-			// Image doesn't exist, return true (or take appropriate action)
-			echo "Image $imageName does not exist."
-			return true
-		    }
-		}
-	}	
-      sh 'docker rm my-container'
-      sh 'docker run -d -p 8082:8080 --name my-container hello-world-java'
-    }
+
+  // Email notification
+    emailext (
+         to: "admin@gmail.com",
+         subject: subject_email,
+         body: details,
+         recipientProviders: [[$class: 'DevelopersRecipientProvider']]
+       )
 }
