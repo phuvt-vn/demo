@@ -50,6 +50,23 @@ node {
 
       echo "Docker Image Tag Name: ${dockerImageTag}"
       sh 'docker stop my-container'
+steps {
+	script {
+	    def imageName = 'hello-world-java'
+
+	    // Check if the image exists
+	    def imageExists = sh(script: "docker inspect -f '{{.Id}}' $imageName", returnStatus: true) == 0
+
+	    if (imageExists) {
+		// Image exists, remove it
+		sh "docker rmi $imageName"
+	    } else {
+		// Image doesn't exist, return true (or take appropriate action)
+		echo "Image $imageName does not exist."
+		return true
+	    }
+	}
+}	
       sh 'docker rm my-container'
       sh 'docker run -d -p 8082:8080 --name my-container hello-world-java'
     }
