@@ -1,6 +1,6 @@
 node {
     def WORKSPACE = "/var/lib/jenkins/workspace/springboot-deploy"
-    def dockerImageTag = "springboot-deploy${env.BUILD_NUMBER}"
+    def dockerImageTag = "springboot-deploy"
 
     try{
 //          notifyBuild('STARTED')
@@ -12,18 +12,17 @@ node {
                 branch: 'master'
          }
           stage('Build docker') {
-                 dockerImage = docker.build("springboot-deploy:${env.BUILD_NUMBER}")
+              sh "docker stop springboot-deploy || true && docker rm springboot-deploy || true"
+              sh "docker rmi springboot-deploy || true"
+              dockerImage = docker.build("springboot-deploy)
           }
 
           stage('Deploy docker'){
                   echo "Docker Image Tag Name: ${dockerImageTag}"
-                  sh "docker stop springboot-deploy || true && docker rm springboot-deploy || true"
-                  sh "docker run --name springboot-deploy -d -p 8082:8082 springboot-deploy:${env.BUILD_NUMBER}"
+                  sh "docker run --name springboot-deploy -d -p 8082:8082 springboot-deploy"
           }
 
-        stage('Cleanup old images') {
-            sh "docker images | grep 'springboot-deploy' | awk '{print \$2}' | sort | uniq -c | sort -rn | tail -n +4 | awk '{print \$2}' | xargs -I {} docker rmi 'springboot-deploy:{}'"
-        }
+
         
     }catch(e){
 //         currentBuild.result = "FAILED"
