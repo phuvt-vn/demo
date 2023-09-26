@@ -20,6 +20,11 @@ node {
                   sh "docker stop springboot-deploy || true && docker rm springboot-deploy || true"
                   sh "docker run --name springboot-deploy -d -p 8082:8082 springboot-deploy:${env.BUILD_NUMBER}"
           }
+
+        stage('Cleanup old images') {
+            sh "docker images | grep 'springboot-deploy' | awk '{print \$2}' | sort | uniq -c | sort -rn | tail -n +4 | awk '{print \$2}' | xargs -I {} docker rmi 'springboot-deploy:{}'"
+        }
+        
     }catch(e){
 //         currentBuild.result = "FAILED"
         throw e
