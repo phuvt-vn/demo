@@ -1,25 +1,20 @@
-# Maven build container 
+# Docker Build Stage
+FROM maven:3-jdk-8-alpine AS build
 
-FROM maven:3.8.5-openjdk-11 AS maven_build
 
-COPY pom.xml /tmp/
+# Build Stage
+WORKDIR /opt/app
 
-COPY src /tmp/src/
+COPY ./ /opt/app
+RUN mvn clean install -DskipTests
 
-WORKDIR /tmp/
 
-RUN mvn package
+# Docker Build Stage
+FROM openjdk:8-jdk-alpine
 
-#pull base image
+COPY --from=build /opt/app/target/*.jar app.jar
 
-FROM eclipse-temurin:11
+ENV PORT 8082
+EXPOSE $PORT
 
-#expose port 8080
-EXPOSE 8082
-
-#default command
-CMD java -jar /data/hello-world-0.1.0.jar
-
-#copy hello world to docker image from builder image
-
-COPY --from=maven_build /tmp/target/hello-world-0.1.0.jar /data/hello-world-0.1.0.jar
+ENTRYPOINT ["java","-jar","-Xmx1024M","-Dserver.port=${PORT}","app.jar"]
